@@ -48,72 +48,72 @@ export const Solver: React.FC<SolverProps> = ({
     });
 
     const combinedCOG_Local = momentSum.divideScalar(totalMass);
-    
+
     // Convert Local COG to World COG based on current transform
     const objectGroup = targetRef.current;
-    
+
     // We update the physics model step by step
     for (let i = 0; i < MAX_ITERATIONS; i++) {
-        // Apply current state to matrix
-        objectGroup.position.z = positionZ.current;
-        objectGroup.rotation.x = rotationX.current;
-        objectGroup.rotation.y = rotationY.current;
-        objectGroup.updateMatrixWorld(true);
+      // Apply current state to matrix
+      objectGroup.position.z = positionZ.current;
+      objectGroup.rotation.x = rotationX.current;
+      objectGroup.rotation.y = rotationY.current;
+      objectGroup.updateMatrixWorld(true);
 
-        // Calculate Submerged Geometry
-        const { volume: submergedVol, center: cobWorld } = calculateSubmergedProperties(
-            meshGeometry,
-            objectGroup.matrixWorld
-        );
+      // Calculate Submerged Geometry
+      const { volume: submergedVol, center: cobWorld } = calculateSubmergedProperties(
+        meshGeometry,
+        objectGroup.matrixWorld
+      );
 
-        // --- Physics Forces ---
-        
-        // 1. Vertical Buoyancy Force vs Gravity
-        const buoyancyForce = submergedVol * waterDensity * GRAVITY;
-        const weightForce = totalMass * GRAVITY;
-        const netForceZ = buoyancyForce - weightForce;
+      // --- Physics Forces ---
 
-        // Simple proportional control for height (Heave)
-        // Adjust Z based on force difference.
-        // We clamp the step to avoid "exploding" meshes if forces are massive (e.g. mm units vs m)
-        let heaveStep = netForceZ * 0.00005; 
-        
-        // Safety clamp: Don't move more than 0.5 unit per iteration to prevent explosion
-        heaveStep = Math.max(-0.5, Math.min(0.5, heaveStep));
+      // 1. Vertical Buoyancy Force vs Gravity
+      const buoyancyForce = submergedVol * waterDensity * GRAVITY;
+      const weightForce = totalMass * GRAVITY;
+      const netForceZ = buoyancyForce - weightForce;
 
-        positionZ.current += heaveStep * DAMPING_TRANSLATION;
+      // Simple proportional control for height (Heave)
+      // Adjust Z based on force difference.
+      // We clamp the step to avoid "exploding" meshes if forces are massive (e.g. mm units vs m)
+      let heaveStep = netForceZ * 0.00005;
 
-        // 2. Rotational Stability (Righting Moment)
-        // We need COG in World Space
-        const cogWorld = combinedCOG_Local.clone().applyMatrix4(objectGroup.matrixWorld);
+      // Safety clamp: Don't move more than 0.5 unit per iteration to prevent explosion
+      heaveStep = Math.max(-0.05, Math.min(0.05, heaveStep));
 
-        // Error vector from COB to COG (Horizontal plane)
-        const dx = cogWorld.x - cobWorld.x;
-        const dy = cogWorld.y - cobWorld.y;
+      positionZ.current += heaveStep * DAMPING_TRANSLATION;
 
-        // Apply rotation to minimize this distance
-        let pitchStep = dy * 0.02; 
-        let rollStep = dx * 0.02;
+      // 2. Rotational Stability (Righting Moment)
+      // We need COG in World Space
+      const cogWorld = combinedCOG_Local.clone().applyMatrix4(objectGroup.matrixWorld);
 
-        // Safety clamp rotation
-        pitchStep = Math.max(-0.05, Math.min(0.05, pitchStep));
-        rollStep = Math.max(-0.05, Math.min(0.05, rollStep));
+      // Error vector from COB to COG (Horizontal plane)
+      const dx = cogWorld.x - cobWorld.x;
+      const dy = cogWorld.y - cobWorld.y;
 
-        rotationX.current -= pitchStep * DAMPING_ROTATION;
-        rotationY.current += rollStep * DAMPING_ROTATION;
-        
-        // Store results for visualization
-        if (i === MAX_ITERATIONS - 1) {
-             onUpdate({
-                displacement: positionZ.current,
-                rotationX: rotationX.current,
-                rotationY: rotationY.current,
-                submergedVolume: submergedVol,
-                cob: cobWorld,
-                totalMass: totalMass,
-                combinedCOG: cogWorld
-            });
-        }
+      // Apply rotation to minimize this distance
+      let pitchStep = dy * 0.02;
+      let rollStep = dx * 0.02;
+
+      // Safety clamp rotation
+      pitchStep = Math.max(-0.05, Math.min(0.05, pitchStep));
+      rollStep = Math.max(-0.05, Math.min(0.05, rollStep));
+
+      rotationX.current -= pitchStep * DAMPING_ROTATION;
+      rotationY.current += rollStep * DAMPING_ROTATION;
+
+      // Store results for visualization
+      if (i === MAX_ITERATIONS - 1) {
+        onUpdate({
+          displacement: positionZ.current,
+          rotationX: rotationX.current,
+          rotationY: rotationY.current,
+          submergedVolume: submergedVol,
+          cob: cobWorld,
+          totalMass: totalMass,
+          combinedCOG: cogWorld
+        });
+      }
     }
   });
 

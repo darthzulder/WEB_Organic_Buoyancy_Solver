@@ -12,54 +12,54 @@ extend({ ThreeLine: THREE.Line });
 
 // Explicitly declare the used intrinsic elements to satisfy TypeScript in strict environments
 declare module 'react' {
-  namespace JSX {
-    interface IntrinsicElements {
-      ambientLight: any;
-      directionalLight: any;
-      mesh: any;
-      planeGeometry: any;
-      meshStandardMaterial: any;
-      group: any;
-      boxGeometry: any;
-      sphereGeometry: any;
-      meshBasicMaterial: any;
-      threeLine: any;
-      bufferGeometry: any;
-      float32BufferAttribute: any;
-      lineBasicMaterial: any;
-      orthographicCamera: any;
-      color: any;
+    namespace JSX {
+        interface IntrinsicElements {
+            ambientLight: any;
+            directionalLight: any;
+            mesh: any;
+            planeGeometry: any;
+            meshStandardMaterial: any;
+            group: any;
+            boxGeometry: any;
+            sphereGeometry: any;
+            meshBasicMaterial: any;
+            threeLine: any;
+            bufferGeometry: any;
+            float32BufferAttribute: any;
+            lineBasicMaterial: any;
+            orthographicCamera: any;
+            color: any;
+        }
     }
-  }
 }
 
 declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      ambientLight: any;
-      directionalLight: any;
-      mesh: any;
-      planeGeometry: any;
-      meshStandardMaterial: any;
-      group: any;
-      boxGeometry: any;
-      sphereGeometry: any;
-      meshBasicMaterial: any;
-      threeLine: any;
-      bufferGeometry: any;
-      float32BufferAttribute: any;
-      lineBasicMaterial: any;
-      orthographicCamera: any;
-      color: any;
+    namespace JSX {
+        interface IntrinsicElements {
+            ambientLight: any;
+            directionalLight: any;
+            mesh: any;
+            planeGeometry: any;
+            meshStandardMaterial: any;
+            group: any;
+            boxGeometry: any;
+            sphereGeometry: any;
+            meshBasicMaterial: any;
+            threeLine: any;
+            bufferGeometry: any;
+            float32BufferAttribute: any;
+            lineBasicMaterial: any;
+            orthographicCamera: any;
+            color: any;
+        }
     }
-  }
 }
 
 // --- Assets ---
 const PlaceholderIsland = ({ setGeometry }: { setGeometry: (g: THREE.BufferGeometry) => void }) => {
     useEffect(() => {
         const geom = new THREE.TorusKnotGeometry(1.5, 0.4, 100, 16);
-        geom.rotateX(Math.PI / 2); 
+        geom.rotateX(Math.PI / 2);
         geom.computeVertexNormals();
         geom.center();
         setGeometry(geom);
@@ -75,19 +75,19 @@ interface ModelProps {
 
 const STLModel: React.FC<ModelProps> = ({ fileUrl, scaleFactor, onGeometryLoaded }) => {
     const geom = useLoader(STLLoader, fileUrl) as THREE.BufferGeometry;
-    
+
     useEffect(() => {
-        if(geom) {
+        if (geom) {
             // Clone geometry to prevent issues with cached resources and apply new transforms
             const clonedGeom = geom.clone();
-            
+
             // Apply User Scale
             clonedGeom.scale(scaleFactor, scaleFactor, scaleFactor);
 
             // Fix rotation if necessary and center
             clonedGeom.computeVertexNormals();
-            clonedGeom.center(); 
-            
+            clonedGeom.center();
+
             // Adjust position so the bottom of the mesh sits at Z=0 initially
             // This prevents it from spawning deep underwater which causes huge forces
             clonedGeom.computeBoundingBox();
@@ -95,7 +95,7 @@ const STLModel: React.FC<ModelProps> = ({ fileUrl, scaleFactor, onGeometryLoaded
                 const heightOffset = -clonedGeom.boundingBox.min.z;
                 clonedGeom.translate(0, 0, heightOffset * 0.5); // Lift it up a bit
             }
-            
+
             onGeometryLoaded(clonedGeom);
         }
     }, [geom, scaleFactor, onGeometryLoaded]);
@@ -111,24 +111,24 @@ const WeightModel = ({ weight, isSelected, baseDensity }: { weight: ExternalWeig
         emissiveIntensity: isSelected ? 0.5 : 0
     };
 
-    const rotationArray: [number, number, number] = weight.rotation 
-        ? [weight.rotation.x, weight.rotation.y, weight.rotation.z] 
+    const rotationArray: [number, number, number] = weight.rotation
+        ? [weight.rotation.x, weight.rotation.y, weight.rotation.z]
         : [0, 0, 0];
 
     // If it has an STL URL, load it
     if (weight.stlUrl) {
         return (
-            <Suspense fallback={<mesh position={weight.position}><boxGeometry args={[0.5,0.5,0.5]} /><meshStandardMaterial color="gray" /></mesh>}>
+            <Suspense fallback={<mesh position={weight.position}><boxGeometry args={[0.5, 0.5, 0.5]} /><meshStandardMaterial color="gray" /></mesh>}>
                 <WeightSTL weight={weight} rotation={rotationArray} materialProps={materialProps} />
             </Suspense>
         );
     }
 
     // Default Cube
-    const size = Math.max(0.2, Math.cbrt(weight.mass/baseDensity)*0.5);
+    const size = Math.max(0.2, Math.cbrt(weight.mass / baseDensity) * 0.5);
     return (
-        <mesh 
-            position={weight.position} 
+        <mesh
+            position={weight.position}
             rotation={rotationArray}
             castShadow
         >
@@ -154,11 +154,11 @@ const WeightSTL = ({ weight, rotation, materialProps }: { weight: ExternalWeight
     }, [geom, weight.scale]);
 
     return (
-        <mesh 
+        <mesh
             ref={meshRef}
-            position={weight.position} 
+            position={weight.position}
             rotation={rotation}
-            geometry={processedGeom} 
+            geometry={processedGeom}
             castShadow
         >
             <meshStandardMaterial {...materialProps} />
@@ -183,16 +183,18 @@ interface SceneContentProps {
     waterDensity: number;
     onStatsUpdate: (stats: SolverResult) => void;
     selectedWeightId?: string | null;
+    onDimensionsUpdate?: (dimensions: THREE.Vector3) => void;
 }
 
-const SceneContent: React.FC<SceneContentProps> = ({ 
-    stlFile, 
-    importScale, 
-    weights, 
-    baseDensity, 
-    waterDensity, 
-    onStatsUpdate, 
-    selectedWeightId 
+const SceneContent: React.FC<SceneContentProps> = ({
+    stlFile,
+    importScale,
+    weights,
+    baseDensity,
+    waterDensity,
+    onStatsUpdate,
+    selectedWeightId,
+    onDimensionsUpdate
 }) => {
     const groupRef = useRef<THREE.Group>(null);
     const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
@@ -200,7 +202,7 @@ const SceneContent: React.FC<SceneContentProps> = ({
         mass: 1000,
         density: baseDensity,
         volume: 1,
-        cog: new THREE.Vector3(0,0,0)
+        cog: new THREE.Vector3(0, 0, 0)
     });
     const [visualStats, setVisualStats] = useState<SolverResult | null>(null);
 
@@ -211,14 +213,14 @@ const SceneContent: React.FC<SceneContentProps> = ({
         if (stlFile) {
             const url = URL.createObjectURL(stlFile);
             setFileUrl(url);
-            
+
             // IMPORTANT: Clear previous geometry immediately to prevent ghosting
             setGeometry(null);
-            
+
             return () => URL.revokeObjectURL(url);
         } else {
             setFileUrl(undefined);
-            setGeometry(null); 
+            setGeometry(null);
         }
     }, [stlFile]);
 
@@ -226,11 +228,22 @@ const SceneContent: React.FC<SceneContentProps> = ({
     useEffect(() => {
         if (!geometry) return;
 
+        // Calculate dimensions
+        geometry.computeBoundingBox();
+        const box = geometry.boundingBox!;
+        const size = new THREE.Vector3();
+        box.getSize(size);
+
+        // Pass dimensions to parent
+        if (onDimensionsUpdate) {
+            onDimensionsUpdate(size);
+        }
+
         const { volume, cog } = calculateMeshProperties(geometry);
         const mass = volume * baseDensity;
-        
+
         setBaseProps({ mass, density: baseDensity, volume, cog });
-    }, [geometry, baseDensity]);
+    }, [geometry, baseDensity, onDimensionsUpdate]);
 
     // Handle updates from Solver
     const handleSolverUpdate = (res: SolverResult) => {
@@ -242,9 +255,9 @@ const SceneContent: React.FC<SceneContentProps> = ({
         <>
             <color attach="background" args={['#0f172a']} />
             <ambientLight intensity={0.6} />
-            <directionalLight 
-                position={[10, 10, 10]} 
-                intensity={1} 
+            <directionalLight
+                position={[10, 10, 10]}
+                intensity={1}
                 castShadow
                 shadow-mapSize={[2048, 2048]}
                 shadow-bias={-0.0001} // Helps with self-shadowing artifacts
@@ -252,35 +265,35 @@ const SceneContent: React.FC<SceneContentProps> = ({
             >
                 <orthographicCamera attach="shadow-camera" args={[-20, 20, 20, -20]} />
             </directionalLight>
-            
+
             {/* Water Plane (Z=0) */}
             <mesh position={[0, 0, 0]} receiveShadow>
                 <planeGeometry args={[500, 500]} />
-                <meshStandardMaterial 
-                    color="#3b82f6" 
-                    transparent 
-                    opacity={0.6} 
-                    roughness={0.1} 
-                    metalness={0.1} 
+                <meshStandardMaterial
+                    color="#3b82f6"
+                    transparent
+                    opacity={0.6}
+                    roughness={0.1}
+                    metalness={0.1}
                     side={THREE.DoubleSide}
                     depthWrite={false} // IMPORTANT: Fixes z-fighting with grid and underwater objects
                 />
             </mesh>
-            
+
             {/* Grid Helper - Lifted slightly above water to prevent z-fighting */}
-            <Grid 
-                position={[0, 0, 0.02]} 
-                rotation={[Math.PI / 2, 0, 0]} 
-                args={[500, 500]} 
-                cellSize={1} 
-                sectionSize={10} 
+            <Grid
+                position={[0, 0, 0.02]}
+                rotation={[Math.PI / 2, 0, 0]}
+                args={[500, 500]}
+                cellSize={1}
+                sectionSize={10}
                 cellColor="#ffffff"
                 sectionColor="#ffffff"
                 cellThickness={0.5}
                 sectionThickness={1}
                 fadeDistance={100}
                 fadeStrength={1}
-                infiniteGrid 
+                infiniteGrid
             />
 
             {/* Simulation Object Group */}
@@ -288,21 +301,21 @@ const SceneContent: React.FC<SceneContentProps> = ({
                 {/* Main Mesh */}
                 {geometry && (
                     <mesh geometry={geometry} castShadow receiveShadow>
-                        <meshStandardMaterial 
-                            color="#fca5a5" 
-                            roughness={0.6} 
-                            side={THREE.DoubleSide} 
+                        <meshStandardMaterial
+                            color="#fca5a5"
+                            roughness={0.6}
+                            side={THREE.DoubleSide}
                         />
                     </mesh>
                 )}
-                
+
                 {/* External Weights */}
                 {weights.map(w => (
-                    <WeightModel 
-                        key={w.id} 
-                        weight={w} 
-                        isSelected={w.id === selectedWeightId} 
-                        baseDensity={baseDensity} 
+                    <WeightModel
+                        key={w.id}
+                        weight={w}
+                        isSelected={w.id === selectedWeightId}
+                        baseDensity={baseDensity}
                     />
                 ))}
             </group>
@@ -310,11 +323,11 @@ const SceneContent: React.FC<SceneContentProps> = ({
             {/* Loaders */}
             <Suspense fallback={<LoaderFallback />}>
                 {fileUrl ? (
-                    <STLModel 
-                        key={`${fileUrl}-${importScale}`} 
-                        fileUrl={fileUrl} 
+                    <STLModel
+                        key={`${fileUrl}-${importScale}`}
+                        fileUrl={fileUrl}
                         scaleFactor={importScale}
-                        onGeometryLoaded={setGeometry} 
+                        onGeometryLoaded={setGeometry}
                     />
                 ) : (
                     <PlaceholderIsland setGeometry={setGeometry} />
@@ -322,7 +335,7 @@ const SceneContent: React.FC<SceneContentProps> = ({
             </Suspense>
 
             {/* Logic - Key forces remount/reset when geometry changes */}
-            <Solver 
+            <Solver
                 key={geometry?.uuid || 'no-geo'}
                 meshGeometry={geometry}
                 baseProperties={baseProps}
@@ -340,7 +353,7 @@ const SceneContent: React.FC<SceneContentProps> = ({
                         <sphereGeometry args={[0.2, 16, 16]} />
                         <meshBasicMaterial color="#22c55e" depthTest={false} transparent opacity={0.8} />
                     </mesh>
-                    
+
                     {/* Center of Buoyancy - Blue */}
                     <mesh position={visualStats.cob}>
                         <sphereGeometry args={[0.2, 16, 16]} />
@@ -349,18 +362,18 @@ const SceneContent: React.FC<SceneContentProps> = ({
 
                     {/* Connection Line */}
                     <threeLine>
-                         <bufferGeometry>
-                            <float32BufferAttribute 
-                                attach="attributes-position" 
+                        <bufferGeometry>
+                            <float32BufferAttribute
+                                attach="attributes-position"
                                 args={[[
                                     visualStats.combinedCOG.x, visualStats.combinedCOG.y, visualStats.combinedCOG.z,
                                     visualStats.cob.x, visualStats.cob.y, visualStats.cob.z
-                                ], 3]} 
+                                ], 3]}
                                 count={2}
                                 itemSize={3}
                             />
-                         </bufferGeometry>
-                         <lineBasicMaterial color="white" />
+                        </bufferGeometry>
+                        <lineBasicMaterial color="white" />
                     </threeLine>
                 </>
             )}
@@ -376,7 +389,7 @@ export const Scene: React.FC<SceneContentProps> = (props) => {
             <Canvas shadows camera={{ position: [8, 8, 8], fov: 45, up: [0, 0, 1] }}>
                 <SceneContent {...props} />
             </Canvas>
-            
+
             <div className="absolute bottom-4 left-4 text-xs text-white/50 pointer-events-none">
                 <p>Z-Axis is Up.</p>
                 <p>Green Dot: Center of Gravity (COG)</p>

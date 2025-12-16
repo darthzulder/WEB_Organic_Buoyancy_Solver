@@ -16,6 +16,7 @@ function App() {
   const [waterDensity, setWaterDensity] = useState(DEFAULT_WATER_DENSITY);
   const [weights, setWeights] = useState<ExternalWeight[]>([]);
   const [stats, setStats] = useState<SolverResult | null>(null);
+  const [dimensions, setDimensions] = useState<THREE.Vector3 | null>(null);
 
   // Selection & Editing State
   const [selectedWeightId, setSelectedWeightId] = useState<string | null>(null);
@@ -35,6 +36,12 @@ function App() {
 
   const [formWeightFile, setFormWeightFile] = useState<File | null>(null);
   const [formWeightScale, setFormWeightScale] = useState(1.0);
+
+  const formatLength = (meters: number) => {
+    if (meters >= 1) return `${meters.toFixed(2)} m`;
+    if (meters >= 0.01) return `${(meters * 100).toFixed(1)} cm`;
+    return `${(meters * 1000).toFixed(0)} mm`;
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -152,7 +159,7 @@ function App() {
     }
 
     const newWeight: ExternalWeight = {
-      id: crypto.randomUUID(),
+      id: THREE.MathUtils.generateUUID(),
       mass: formMass,
       position: new THREE.Vector3(formX, formY, formZ),
       rotation: new THREE.Vector3(
@@ -235,6 +242,24 @@ function App() {
               </div>
             </div>
             {!stlFile && <p className="text-[10px] text-slate-500 mt-1">Using default Torus Knot if no file selected.</p>}
+
+            {/* Dimensions Display */}
+            {dimensions && (
+              <div className="mt-2 grid grid-cols-3 gap-2 bg-slate-900/50 p-2 rounded border border-slate-700/50">
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-slate-500 uppercase">Length (X)</span>
+                  <span className="text-xs text-white font-mono">{formatLength(dimensions.x)}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-slate-500 uppercase">Width (Y)</span>
+                  <span className="text-xs text-white font-mono">{formatLength(dimensions.y)}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-slate-500 uppercase">Height (Z)</span>
+                  <span className="text-xs text-white font-mono">{formatLength(dimensions.z)}</span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -395,8 +420,8 @@ function App() {
                 key={w.id}
                 onClick={() => selectWeight(w.id)}
                 className={`flex items-center justify-between p-2 rounded text-xs border cursor-pointer transition-all ${selectedWeightId === w.id
-                  ? 'bg-blue-600/20 border-blue-500 ring-1 ring-blue-500/50'
-                  : 'bg-slate-700/50 border-slate-700 hover:bg-slate-700'
+                    ? 'bg-blue-600/20 border-blue-500 ring-1 ring-blue-500/50'
+                    : 'bg-slate-700/50 border-slate-700 hover:bg-slate-700'
                   }`}
               >
                 <div className="flex items-center gap-2">
@@ -479,6 +504,7 @@ function App() {
           waterDensity={waterDensity}
           onStatsUpdate={setStats}
           selectedWeightId={selectedWeightId}
+          onDimensionsUpdate={setDimensions}
         />
       </div>
     </div>

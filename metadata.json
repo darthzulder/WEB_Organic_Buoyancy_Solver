@@ -1,0 +1,5 @@
+{
+  "name": "Organic Buoyancy Solver",
+  "description": "A naval hydrostatics simulator that calculates the static equilibrium of arbitrary 3D meshes by computing submerged volumes, centers of buoyancy, and gravitational alignment in real-time.",
+  "requestFramePermissions": []
+}

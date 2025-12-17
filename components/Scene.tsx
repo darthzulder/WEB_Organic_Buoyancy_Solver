@@ -1,11 +1,12 @@
 import React, { Suspense, useRef, useState, useEffect } from 'react';
-import { Canvas, useLoader, extend } from '@react-three/fiber';
+import { Canvas, useLoader, extend, useThree } from '@react-three/fiber';
 import { OrbitControls, Grid, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { STLLoader } from 'three-stdlib';
 import { Solver } from './Solver';
 import { PhysicalProperties, ExternalWeight, SolverResult } from '../types';
 import { calculateMeshProperties } from '../utils/geometryUtils';
+import { calculateProjectedAreaGPU } from '../utils/analysisUtils';
 
 // Register custom name for Line to avoid TypeScript conflict with SVG <line>
 extend({ ThreeLine: THREE.Line });
@@ -184,6 +185,8 @@ interface SceneContentProps {
     onStatsUpdate: (stats: SolverResult) => void;
     selectedWeightId?: string | null;
     onDimensionsUpdate?: (dimensions: THREE.Vector3) => void;
+    onAreaUpdate?: (area: number) => void;
+    onGeometryLoaded?: (geometry: THREE.BufferGeometry) => void;
 }
 
 const SceneContent: React.FC<SceneContentProps> = ({
@@ -194,8 +197,11 @@ const SceneContent: React.FC<SceneContentProps> = ({
     waterDensity,
     onStatsUpdate,
     selectedWeightId,
-    onDimensionsUpdate
+    onDimensionsUpdate,
+    onAreaUpdate,
+    onGeometryLoaded
 }) => {
+    const { gl } = useThree();
     const groupRef = useRef<THREE.Group>(null);
     const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
     const [baseProps, setBaseProps] = useState<PhysicalProperties>({
@@ -239,11 +245,22 @@ const SceneContent: React.FC<SceneContentProps> = ({
             onDimensionsUpdate(size);
         }
 
+        // Pass geometry to parent for preview
+        if (onGeometryLoaded) {
+            onGeometryLoaded(geometry);
+        }
+
+        // Calculate Area
+        if (onAreaUpdate) {
+            const area = calculateProjectedAreaGPU(geometry, gl);
+            onAreaUpdate(area);
+        }
+
         const { volume, cog } = calculateMeshProperties(geometry);
         const mass = volume * baseDensity;
 
         setBaseProps({ mass, density: baseDensity, volume, cog });
-    }, [geometry, baseDensity, onDimensionsUpdate]);
+    }, [geometry, baseDensity, onDimensionsUpdate, onAreaUpdate, onGeometryLoaded, gl]);
 
     // Handle updates from Solver
     const handleSolverUpdate = (res: SolverResult) => {

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Scene } from './components/Scene';
 import { ExternalWeight, SolverResult } from './types';
 import * as THREE from 'three';
-import { Plus, Trash2, Upload, AlertCircle, Ruler, Edit3, Box, Rotate3d } from 'lucide-react';
+import { Plus, Trash2, Upload, AlertCircle, Ruler, Edit3, Box, Rotate3d, Maximize } from 'lucide-react';
+import { ShadowPreview } from './components/ShadowPreview';
 
 // Default Densities
 const DEFAULT_MATERIAL_DENSITY = 200; // Light wood/foam approx (kg/m3)
@@ -17,6 +18,8 @@ function App() {
   const [weights, setWeights] = useState<ExternalWeight[]>([]);
   const [stats, setStats] = useState<SolverResult | null>(null);
   const [dimensions, setDimensions] = useState<THREE.Vector3 | null>(null);
+  const [projectedArea, setProjectedArea] = useState<number | null>(null);
+  const [previewGeometry, setPreviewGeometry] = useState<THREE.BufferGeometry | null>(null);
 
   // Selection & Editing State
   const [selectedWeightId, setSelectedWeightId] = useState<string | null>(null);
@@ -43,10 +46,18 @@ function App() {
     return `${(meters * 1000).toFixed(0)} mm`;
   };
 
+  const formatArea = (area: number) => {
+    if (area >= 1) return `${area.toFixed(4)} m²`;
+    if (area >= 0.0001) return `${(area * 10000).toFixed(2)} cm²`;
+    return `${(area * 1000000).toFixed(0)} mm²`;
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setStlFile(e.target.files[0]);
       setStats(null); // Clear previous stats
+      setProjectedArea(null);
+      setPreviewGeometry(null);
     }
   };
 
@@ -258,6 +269,14 @@ function App() {
                   <span className="text-[10px] text-slate-500 uppercase">Height (Z)</span>
                   <span className="text-xs text-white font-mono">{formatLength(dimensions.z)}</span>
                 </div>
+              </div>
+            )}
+
+            {/* Projected Area Display */}
+            {projectedArea !== null && (
+              <div className="mt-2 flex justify-between items-center bg-slate-900/50 p-2 rounded border border-slate-700/50">
+                <span className="text-[10px] text-slate-500 uppercase flex items-center gap-1"><Maximize size={10} /> Projected Area (XY)</span>
+                <span className="text-xs text-green-400 font-mono font-bold">{formatArea(projectedArea)}</span>
               </div>
             )}
           </div>
@@ -505,7 +524,30 @@ function App() {
           onStatsUpdate={setStats}
           selectedWeightId={selectedWeightId}
           onDimensionsUpdate={setDimensions}
+          onAreaUpdate={setProjectedArea}
+          onGeometryLoaded={setPreviewGeometry}
         />
+
+        {/* Small window for 2D Projection (Shadow Preview) - Bottom Left */}
+        {previewGeometry && projectedArea !== null && (
+          <div className="absolute bottom-4 left-4 z-50 rounded-lg overflow-hidden shadow-2xl border-2 border-slate-600 bg-white w-56 h-56 animate-in fade-in zoom-in duration-300">
+            <div className="relative w-full h-full">
+              {/* Re-use geometry but with scale applied */}
+              <ShadowPreview geometry={previewGeometry} scale={importScale} />
+
+              {/* Floating Text Overlay */}
+              <div className="absolute top-2 left-2 right-2 bg-slate-900/80 backdrop-blur-sm px-3 py-2 rounded border border-slate-700">
+                <p className="text-[10px] text-slate-400 uppercase tracking-wider font-bold mb-0.5">Projected Area</p>
+                <p className="text-lg font-mono font-bold text-white leading-none">{formatArea(projectedArea)}</p>
+              </div>
+
+              {/* Bottom Label */}
+              <div className="absolute bottom-0 inset-x-0 bg-slate-900/10 p-1 text-center pointer-events-none">
+                <p className="text-[9px] text-slate-500 font-medium">TOP-DOWN PROJECTION (SHADOW)</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
